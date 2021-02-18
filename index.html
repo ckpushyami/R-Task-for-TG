@@ -1,0 +1,434 @@
+---
+title: "R Task: Percentage of High Educated Mukhiyas by Various Categories"
+output:
+  html_document:
+    code_folding: hide
+
+---
+
+***
+## Part 1: Percentage of high educated mukhiyas by district
+
+
+
+This section contains two tibbles, and one bar plot.
+
+1. Tibble 1: Mukhiyas Per District
+2. Tibble 2: % of High Educated Mukhiyas per District
+3. Bar Plot: Percentage of High Educated Mukhiyas by District
+
+```{r, message=FALSE}
+
+load("/Users/pushyami/Downloads/R Task for TG/mukhiya_07102020.RData")
+
+########################## TG's code ###########################################
+mukhiya<-mukhiya[,c(1,2,3,4,5,6,8,9,10,11,12,13:18,22:24,29)]
+
+#education of the mukhiya
+mukhiya$edu[mukhiya$edu=="--"]<-NA
+mukhiya$edurecode[is.na(mukhiya$edu)==FALSE]<-"highedu"
+mukhiya$edurecode[mukhiya$edu=="Illiterate"|mukhiya$edu=="Literate"|mukhiya$edu=="Primary"|mukhiya$edu=="Inter"|mukhiya$edu=="Middle"]<-"lowedu"
+
+
+############################## Pushyami's Code #################################
+
+library(dplyr)
+highedu <- filter(mukhiya, mukhiya$edurecode == "highedu")  ## filtering all rows in mukhiya with edurecode = "highedu"
+plotdata <- group_by(highedu, districtname)%>%count(edurecode == "highedu")  ## counting number of rows with edurecode = "highedu" per district
+mukhiyasperdistrict <- group_by(mukhiya, districtname)%>% count(post == "Mukhiya")  ## counting number of mukhiyas per district
+rename(mukhiyasperdistrict, mukhiyaperdistrict = n)
+
+plotdatanew <- merge(plotdata, mukhiyasperdistrict, by = "districtname")  ## merging plotdata with total mukhiyasperdistrict 
+names <- c("districtname", "highedustatus", "highedmukh", "ismukhiya", "mukhperdist")
+colnames(plotdatanew) <- c(names)
+
+plotdatanew2 <- plotdatanew %>% mutate(pchighedmukh = highedmukh*100/mukhperdist)
+plotdatanew2
+
+library(ggplot2)
+
+p <- ggplot(plotdatanew2, aes(x=districtname, y=pchighedmukh)) +
+    geom_bar(stat="identity", fill="steelblue")+
+    theme_minimal()+
+  labs(x = 'District',  
+       y = '% of High Educated Mukhiyas',  
+       subtitle = 'Percentage of High Educated Mukhiyas by District') + 
+  coord_flip() +
+  theme(axis.title = element_text(size=8),
+        plot.title = element_text(vjust = 0.9,size=14, face = "bold"))
+p
+
+
+```
+
+
+*** 
+
+## Part 2: Percentage of high educated mukhiyas by gender
+
+This section contains three tibbles and one bar plot.
+
+1. Tibble 1: Total females and males
+2. Tibble 2: Total female and male Mukhiyas
+3. Tibble 3: Percentage of high educated mukhiyas by gender
+4. Bar Plot: Percentage of High Educated Mukhiyas by Gender
+
+``` {r, message = FALSE}
+load("/Users/pushyami/Downloads/R Task for TG/mukhiya_07102020.RData")
+
+########################## TG's code ###########################################
+mukhiya<-mukhiya[,c(1,2,3,4,5,6,8,9,10,11,12,13:18,22:24,29)]
+
+#gender of the mukhiya
+mukhiya$genderdummy<-NA
+mukhiya$genderdummy[mukhiya$gender=="महिला"|mukhiya$gender=="तृतीय लिंग"]<-"Female"
+mukhiya$genderdummy[mukhiya$gender=="पुरुष"]<-"Male"
+table(mukhiya$genderdummy)
+
+#education of the mukhiya
+mukhiya$edu[mukhiya$edu=="--"]<-NA
+mukhiya$edurecode[is.na(mukhiya$edu)==FALSE]<-"highedu"
+mukhiya$edurecode[mukhiya$edu=="Illiterate"|mukhiya$edu=="Literate"|mukhiya$edu=="Primary"|mukhiya$edu=="Inter"|mukhiya$edu=="Middle"]<-"lowedu"
+
+############################## Pushyami's Code #################################
+
+library(dplyr)
+highedu <- filter(mukhiya, edurecode == "highedu")
+genderwise <- group_by(highedu, genderdummy)%>%count(edurecode == "highedu") 
+
+mukhiyaspergender <- group_by(mukhiya, genderdummy)%>% count(post == "Mukhiya")
+rename(mukhiyaspergender, mukhiyapergender = n)
+
+genderwise2 <- merge(genderwise, mukhiyaspergender, by = "genderdummy") 
+names <- c("gender", "highedustatus", "highedmukh", "ismukhiya", "mukhpergen")
+colnames(genderwise2) <- c(names)
+
+genderwise3 <- genderwise2 %>% mutate(pchighedmukh = highedmukh*100/mukhpergen)
+genderwise3
+
+library(ggplot2)
+p <- ggplot(genderwise3, aes(x = gender,y = pchighedmukh)) + 
+  geom_bar(stat='identity', width = 0.5, size =3, aes(fill = gender), alpha=0.99) +
+  labs(x = 'Gender',  
+       y = '% of High Educated Mukhiyas',  
+       subtitle = 'Percentage of High Educated Mukhiyas by Gender') + 
+  coord_flip() +
+  scale_fill_brewer("Gender") + 
+  theme_minimal() +
+  theme(axis.title = element_text(size=8),
+        plot.title = element_text(vjust = 0.9,size=14, face = "bold"))
+p
+```
+
+***
+This shows that (~)22% of female mukhiyas, and (~)47% of male mukhiyas have high education. _Note: This does not line up with figures in the "Who Responds" document, where 23% female, and 53% male mukhiyas have high education. _
+
+***
+
+## Part 3: Percentage of High Educated Mukhiyas by Caste Category
+
+```{r, message=FALSE}
+load("/Users/pushyami/Downloads/R Task for TG/mukhiya_07102020.RData")
+
+########################## TG's code ###########################################
+mukhiya<-mukhiya[,c(1,2,3,4,5,6,8,9,10,11,12,13:18,22:24,29)]
+
+#caste of the mukhiya, OBC is backward class
+mukhiya$category[mukhiya$category=="अत्यन्त पिछड़ा वर्ग"]<-"SC"
+mukhiya$category[mukhiya$category=="अनुसूचित जाति"]<-"SC"
+mukhiya$category[mukhiya$category=="अनुसूचित जनजाति"]<-"ST"
+mukhiya$category[mukhiya$category=="पिछड़ा वर्ग"]<-"OBC"
+mukhiya$category[mukhiya$category=="अन्य"]<-"GEN"
+table(mukhiya$category)
+
+#education of the mukhiya
+mukhiya$edu[mukhiya$edu=="--"]<-NA
+mukhiya$edurecode[is.na(mukhiya$edu)==FALSE]<-"highedu"
+mukhiya$edurecode[mukhiya$edu=="Illiterate"|mukhiya$edu=="Literate"|mukhiya$edu=="Primary"|mukhiya$edu=="Inter"|mukhiya$edu=="Middle"]<-"lowedu"
+
+############################## Pushyami's Code #################################
+
+library(dplyr)
+highedu <- filter(mukhiya, mukhiya$edurecode == "highedu")
+castewise <- group_by(highedu, category)%>%count(edurecode == "highedu")
+mukhiyaspercategory <- group_by(mukhiya, category)%>% count(post == "Mukhiya")
+rename(mukhiyaspercategory, mukhiyapercategory = n)
+
+castewise2 <- merge(castewise, mukhiyaspercategory, by = "category")
+castewise2
+names <- c("category", "highedustatus", "highedmukh", "ismukhiya", "mukhpercat")
+colnames(castewise2) <- c(names)
+
+castewise3 <- castewise2 %>% mutate(pchighedmukh = highedmukh*100/mukhpercat)
+castewise3
+
+library(ggplot2)
+p <- ggplot(castewise3, aes(x=category, y=pchighedmukh)) +
+    geom_bar(stat="identity", fill = "steelblue")+
+    theme_minimal()+
+  labs(x = 'Caste Category',  
+       y = '% of High Educated Mukhiyas',  
+       subtitle = 'Percentage of High Educated Mukhiyas by Caste') + 
+  coord_flip() +
+  theme(axis.title = element_text(size=8),
+        plot.title = element_text(vjust = 0.9,size=14, face = "bold"))
+p
+```
+
+## Part 4: Percentage of High Educated Mukhiyas by Caste and Gender
+
+```{r, message=FALSE}
+
+load("/Users/pushyami/Downloads/R Task for TG/mukhiya_07102020.RData")
+
+########################## TG's code ###########################################
+mukhiya<-mukhiya[,c(1,2,3,4,5,6,8,9,10,11,12,13:18,22:24,29)]
+
+#caste of the mukhiya, OBC is backward class
+mukhiya$category[mukhiya$category=="अत्यन्त पिछड़ा वर्ग"]<-"SC"
+mukhiya$category[mukhiya$category=="अनुसूचित जाति"]<-"SC"
+mukhiya$category[mukhiya$category=="अनुसूचित जनजाति"]<-"ST"
+mukhiya$category[mukhiya$category=="पिछड़ा वर्ग"]<-"OBC"
+mukhiya$category[mukhiya$category=="अन्य"]<-"GEN"
+table(mukhiya$category)
+
+#gender of the mukhiya
+mukhiya$genderdummy<-NA
+mukhiya$genderdummy[mukhiya$gender=="महिला"|mukhiya$gender=="तृतीय लिंग"]<-"Female"
+mukhiya$genderdummy[mukhiya$gender=="पुरुष"]<-"Male"
+table(mukhiya$genderdummy)
+
+#education of the mukhiya
+mukhiya$edu[mukhiya$edu=="--"]<-NA
+mukhiya$edurecode[is.na(mukhiya$edu)==FALSE]<-"highedu"
+mukhiya$edurecode[mukhiya$edu=="Illiterate"|mukhiya$edu=="Literate"|mukhiya$edu=="Primary"|mukhiya$edu=="Inter"|mukhiya$edu=="Middle"]<-"lowedu"
+
+############################## Pushyami's Code #################################
+
+library(dplyr)
+library(tibble)
+
+highedu <- filter(mukhiya, mukhiya$edurecode == "highedu" & mukhiya$post == "Mukhiya") # filter rows with edurecode = highedu & post = mukhiya
+
+casteandgenderwise <- group_by(highedu, category, genderdummy)%>%
+  count(edurecode == "highedu") # for each caste and gender combo, how many h.educated mukhiyas?
+
+casteandgenderwise <- casteandgenderwise %>% 
+  add_column(mergeid = c(1,2,3,4,5,6,7,8)) # new column to merge tables later
+
+mukhiyaspercategoryandgender <- group_by(mukhiya, category, genderdummy)%>% 
+  count(post == "Mukhiya") # how many mukhiyas per caste and gender combo? (2x3 matrix)
+
+mukhiyaspercategoryandgender <- mukhiyaspercategoryandgender %>% add_column(mergeid = c(1,2,3,4,5,6,7,8)) # new column to merge tables later
+rename(mukhiyaspercategoryandgender, mukhiyapercategoryandgender = n)
+
+casteandgenderwise2 <- merge(casteandgenderwise, mukhiyaspercategoryandgender, by = "mergeid") 
+casteandgenderwise2 <- select(casteandgenderwise2, -category.y, -genderdummy.y) #deleting repeat columns
+
+names <- c("mergeid", "castecategory", "genderdummy", "ishighed", "highedmpercng", "ismukhiya","totalmukhpercng")
+colnames(casteandgenderwise2) <- c(names)
+
+casteandgenderwise3 <- mutate(casteandgenderwise2, pchighedmukh1 = highedmpercng*100/totalmukhpercng) # percent of highed mukhs per caste and gender category
+casteandgenderwise3
+
+library(ggplot2)
+p <- ggplot(casteandgenderwise3, aes(x = castecategory, y = pchighedmukh1, fill = genderdummy)) + 
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = 'Caste Category',  
+       y = '% of High Educated Mukhiyas',  
+       subtitle = 'Percentage of High Educated Mukhiyas by Caste and Gender') +
+  scale_fill_brewer(palette="Paired") +
+  theme_minimal() 
+p
+
+```
+
+More male mukhiyas are high educated than female mukhiyas, across caste categories. But the literacy gap is higher among low status groups.
+
+## Part 5: Percentage of High Educated Mukhiyas by Caste Reservation:
+
+``` {r, message = FALSE}
+
+load("/Users/pushyami/Downloads/R Task for TG/mukhiya_07102020.RData")
+
+########################## TG's code ###########################################
+mukhiya<-mukhiya[,c(1,2,3,4,5,6,8,9,10,11,12,13:18,22:24,29)]
+
+#education of the mukhiya
+mukhiya$edu[mukhiya$edu=="--"]<-NA
+mukhiya$edurecode[is.na(mukhiya$edu)==FALSE]<-"highedu"
+mukhiya$edurecode[mukhiya$edu=="Illiterate"|mukhiya$edu=="Literate"|mukhiya$edu=="Primary"|mukhiya$edu=="Inter"|mukhiya$edu=="Middle"]<-"lowedu"
+
+############################## Pushyami's Code #################################
+
+library(dplyr)
+highedu <- filter(mukhiya, mukhiya$edurecode == "highedu")
+reswise <- group_by(highedu, res)%>%count(edurecode == "highedu")
+mukhiyasperres <- group_by(mukhiya, res)%>% count(post == "Mukhiya")
+rename(mukhiyasperres, mukhiyaperres = n)
+
+reswise2 <- merge(reswise, mukhiyasperres, by = "res")
+reswise2
+names <- c("res", "highedustatus", "highedmukh", "ismukhiya", "mukhperres")
+colnames(reswise2) <- c(names)
+
+reswise3 <- reswise2 %>% mutate(pchighedmukh = highedmukh*100/mukhperres)
+reswise3
+
+library(ggplot2)
+p <- ggplot(reswise3, aes(x=res, y=pchighedmukh)) +
+    geom_bar(stat="identity", fill = "steelblue")+
+    theme_minimal()+
+  labs(x = 'Reservation Status',  
+       y = '% of High Educated Mukhiyas',  
+       subtitle = 'Percentage of High Educated Mukhiyas by Reservation Status') + 
+  coord_flip() +
+  theme(axis.title = element_text(size=8),
+        plot.title = element_text(vjust = 0.9,size=14, face = "bold"))
+p
+
+```
+
+## Part 6: Percentage of High Educated Mukhiyas by Caste in Reserved and Non-Reserved (for Women) Panchayats
+
+``` {r, message = FALSE}
+
+load("/Users/pushyami/Downloads/R Task for TG/mukhiya_07102020.RData")
+
+########################## TG's code ###########################################
+mukhiya<-mukhiya[,c(1,2,3,4,5,6,8,9,10,11,12,13:18,22:24,29)]
+
+#caste of the mukhiya, OBC is backward class
+mukhiya$category[mukhiya$category=="अत्यन्त पिछड़ा वर्ग"]<-"SC"
+mukhiya$category[mukhiya$category=="अनुसूचित जाति"]<-"SC"
+mukhiya$category[mukhiya$category=="अनुसूचित जनजाति"]<-"ST"
+mukhiya$category[mukhiya$category=="पिछड़ा वर्ग"]<-"OBC"
+mukhiya$category[mukhiya$category=="अन्य"]<-"GEN"
+table(mukhiya$category)
+
+#education of the mukhiya
+mukhiya$edu[mukhiya$edu=="--"]<-NA
+mukhiya$edurecode[is.na(mukhiya$edu)==FALSE]<-"highedu"
+mukhiya$edurecode[mukhiya$edu=="Illiterate"|mukhiya$edu=="Literate"|mukhiya$edu=="Primary"|mukhiya$edu=="Inter"|mukhiya$edu=="Middle"]<-"lowedu"
+
+############################## Pushyami's Code #################################
+
+library(dplyr)
+library(tibble)
+highedu <- filter(mukhiya, mukhiya$edurecode == "highedu" & mukhiya$post == "Mukhiya") # all mukhiyas w highedu
+casteinnonreswomen <- group_by(highedu, category, reswomen)%>%count(edurecode == "highedu") # for each caste and reswomen combo, how many highed mukhiyas? (4x2 matrix) but only 7 entries because none of the 7 ST women in reserved panchayats are highed
+casteinnonreswomen <- casteinnonreswomen %>% add_column(mergeid = c(1,2,3,4,5,6,7)) # to merge tables later
+
+
+
+mukhiyaspercategorynrw <- group_by(mukhiya, category, reswomen)%>% 
+  count(post == "Mukhiya") # for each caste and reserved/nonres panchayat combo, how many mukhiyas in all? (4x2 matrix)
+mukhiyaspercategorynrw <- mukhiyaspercategorynrw %>% add_column(mergeid = c(1,2,3,4,5,6,7,8))
+rename(mukhiyaspercategorynrw, mukhiyapercategorynrw = n)
+
+castenrw <- merge(casteinnonreswomen, mukhiyaspercategorynrw, by = "mergeid") 
+castenrw <- select(castenrw, -category.y, -reswomen.y) #delete repeat columns
+
+
+names <- c("mergeid", "castecategory", "resstatus", "ishighed", "highedmukhpercatnrw", "ismukhiya","totalmukhpercatnrw")
+colnames(castenrw) <- c(names)
+
+castenrw <- mutate(castenrw, pchighedmukh1 = highedmukhpercatnrw*100/totalmukhpercatnrw)
+castenrw2 <- mutate(castenrw, resstatus = as.factor(resstatus) ) # resstatus was stored as numeric, creating problems in ggplot2
+castenrw2
+
+library(ggplot2)
+p <- ggplot(castenrw2, aes(x = castecategory, y = pchighedmukh1, fill = resstatus)) + 
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = 'Caste Category',  
+       y = '% of High Educated Mukhiyas',  
+       subtitle = '% of High Educated Mukhiyas by Caste in Reserved and Non-Reserved Panchayats for Women') +
+  scale_fill_brewer(palette="Paired") 
+  
+p
+```
+
+_Note: There are no high educated mukhiyas belonging to the ST caste category in any of the reserved (for women) Panchayats._
+
+
+## Part 7: Percentage of High Educated Mukhiyas by Caste in Reserved and Non-Reserved (for Caste Categories) Panchayats
+
+``` {r, message = FALSE}
+
+load("/Users/pushyami/Downloads/R Task for TG/mukhiya_07102020.RData")
+
+########################## TG's code ###########################################
+mukhiya<-mukhiya[,c(1,2,3,4,5,6,8,9,10,11,12,13:18,22:24,29)]
+
+#caste of the mukhiya, OBC is backward class
+mukhiya$category[mukhiya$category=="अत्यन्त पिछड़ा वर्ग"]<-"SC"
+mukhiya$category[mukhiya$category=="अनुसूचित जाति"]<-"SC"
+mukhiya$category[mukhiya$category=="अनुसूचित जनजाति"]<-"ST"
+mukhiya$category[mukhiya$category=="पिछड़ा वर्ग"]<-"OBC"
+mukhiya$category[mukhiya$category=="अन्य"]<-"GEN"
+table(mukhiya$category)
+
+#education of the mukhiya
+mukhiya$edu[mukhiya$edu=="--"]<-NA
+mukhiya$edurecode[is.na(mukhiya$edu)==FALSE]<-"highedu"
+mukhiya$edurecode[mukhiya$edu=="Illiterate"|mukhiya$edu=="Literate"|mukhiya$edu=="Primary"|mukhiya$edu=="Inter"|mukhiya$edu=="Middle"]<-"lowedu"
+
+############################## Pushyami's Code #################################
+
+library(dplyr)
+library(tibble)
+highedu <- filter(mukhiya, mukhiya$edurecode == "highedu" & mukhiya$post == "Mukhiya")
+casteinnonrescaste <- group_by(highedu, category, rescaste)%>%count(edurecode == "highedu")
+casteinnonrescaste <- casteinnonrescaste %>% add_column(mergeid = c(1,2,3,4,5,6,7,8))
+
+
+
+mukhiyaspercategorynrc <- group_by(mukhiya, category, rescaste)%>% count(post == "Mukhiya")
+mukhiyaspercategorynrc <- mukhiyaspercategorynrc %>% add_column(mergeid = c(1,2,3,4,5,6,7,8))
+rename(mukhiyaspercategorynrc, mukhiyapercategorynrc = n)
+
+castenrc <- merge(casteinnonrescaste, mukhiyaspercategorynrc, by = "mergeid") 
+castenrc <- select(castenrc, -category.y, -rescaste.y)
+
+
+names <- c("mergeid", "castecategory", "resstatus", "ishighed", "highedmukhpercatnrc", "ismukhiya","totalmukhpercatnrc")
+colnames(castenrc) <- c(names)
+castenrc
+
+castenrc <- mutate(castenrc, pchighedmukh1 = highedmukhpercatnrc*100/totalmukhpercatnrc)
+castenrc2 <- mutate(castenrc, resstatus = as.factor(resstatus) )
+castenrc2
+
+library(ggplot2)
+p <- ggplot(castenrc2, aes(x = castecategory, y = pchighedmukh1, fill = resstatus)) + 
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = 'Caste Category',  
+       y = '% of High Educated Mukhiyas',  
+       subtitle = '% of High Educated Mukhiyas by Caste in Reserved and Non-Reserved Panchayats (for Caste)') +
+  scale_fill_brewer(palette="Paired") 
+  
+p
+```
+
+
+
+***
+## Resources:
+
+### R Markdown
+
+1. [An Rmarkdown Cheatsheet](https://rstudio.com/wp-content/uploads/2016/03/rmarkdown-cheatsheet-2.0.pdf)
+2. [code_folding and patchwork](https://towardsdatascience.com/ten-awesome-r-markdown-tricks-56ef6d41098)
+3. [Horizontal Lines with *** and other useful tricks](https://holtzy.github.io/Pimp-my-rmd/)
+
+### Beautiful Bar Plots
+
+1. [Chart Design - Do's and Don't's](https://handsondataviz.org/chart-design.html)
+2. [Grouped Bar Plots](https://rkabacoff.github.io/datavis/Bivariate.html)
+3. [Formatting Plot/Axis/Legend Titles](http://www.sthda.com/english/wiki/ggplot2-title-main-axis-and-legend-titles)
+4. [Colour Palette for Bar Plots: scale_fill_brewer()](https://towardsdatascience.com/how-to-create-and-customize-bar-plot-using-ggplot2-package-in-r-4872004878a7)
+5. [Reddit page: r/dataisbeautiful](https://www.reddit.com/r/dataisbeautiful/)
+6. [Bar Plot Principles](https://medium.com/nightingale/how-to-create-a-simple-yet-effective-bar-chart-79b091dedef1)
+7. [Bar Plots: Quick Start Guide](http://www.sthda.com/english/wiki/ggplot2-barplots-quick-start-guide-r-software-and-data-visualization#change-fill-colors)
+
+
